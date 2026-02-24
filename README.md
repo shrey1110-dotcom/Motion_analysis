@@ -1,164 +1,137 @@
-# Synapse AI: Athlete Training Analyzer
+# AI Sports & Fitness Motion Analysis MVP
 
-Production-style hackathon project for live biomechanics coaching, cricket simulation, pro-motion comparison, and cloud athlete session tracking.
+Hackathon-ready end-to-end project for live camera and uploaded video motion analysis.
 
-## Core Features
-- Live webcam analysis with MoveNet keypoints
-- Activity-aware scoring (`squat`, `cricket_cover_drive`, `auto`)
-- Real-time coaching cues + biomechanics insights
-- Pro-Compare mode (user vs uploaded reference motion)
-- Cricket stadium simulation with timing outcomes:
-  - `PERFECT`, `EARLY`, `LATE`, `MISS`
-- Google login via Clerk
-- User session persistence in Neon PostgreSQL
-- Export analysis JSON/CSV for review
+## What It Does
+- Live camera mode and video upload mode
+- Pose detection using MoveNet in browser
+- Activity detection (auto/squat/cricket cover drive)
+- Technique scoring against reference ranges
+- Deterministic coaching feedback
+- Optional LLM rewriting layer (`gpt-4o-mini`) for human-friendly feedback
+- Visual analytics: skeleton overlay + angle charts + metric table
 
-## Tech Stack
-- Frontend: React, Vite, Tailwind CSS, Chart.js, Three.js
-- Backend: FastAPI, Pydantic, SQLAlchemy
-- ML/Data: NumPy, pandas, scikit-learn, OpenCV, Pillow, joblib
-- Auth: Clerk
-- Database: Neon PostgreSQL (fallback SQLite in local/dev if DB URL not set)
+## Architecture
+- Frontend: HTML/CSS/JS + TensorFlow.js MoveNet + Chart.js
+- Backend: FastAPI
+- Scoring pipeline:
+  1. Browser extracts normalized 17-point keypoints timeline
+  2. POST keypoints to `/api/analyze`
+  3. Backend detects activity, computes biomechanical metrics
+  4. Scores deviations against target ranges
+  5. Returns score + feedback + timeline for charts
 
-## High-Level Flow
-1. Browser captures pose keypoints (17 landmarks).
-2. Keypoints timeline is sent to backend `/api/analyze`.
-3. Backend extracts features, detects activity, scores performance.
-4. Response returns overall score, ML label, metrics, timeline, feedback.
-5. Signed-in athlete sessions are stored in Neon via `/api/sessions`.
-
-## Repository Structure
-```text
+## Project Structure
+```
 backend/
   app/
     analysis/
       activity.py
+      angles.py
+      constants.py
       features.py
-      scoring.py
       feedback.py
-      image_squat_model.py
-      video_cricket_model.py
-    auth.py
-    db.py
-    models.py
+      reference_library.py
+      scoring.py
     main.py
     schemas.py
-  train_model.py
-  train_real_squat.py
-  train_real_cricket_action.py
+  requirements.txt
 frontend/
-  src/
-    views/
-    components/
-    hooks/
-    config/
+  index.html
+  assets/
+    app.js
+    styles.css
 ```
 
-## Local Setup
-
-### 1) Python environment
+## Run Locally
+1. Create environment and install dependencies:
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r backend/requirements.txt
 ```
 
-### 2) Frontend dependencies
-```bash
-npm --prefix frontend install
-```
-
-### 3) Environment files
-
-Root `.env` (optional LLM rewrite):
+2. Configure env:
 ```bash
 cp .env.example .env
-# OPENAI_API_KEY=...
+# optional LLM rewrite
+# OPENAI_API_KEY=your_key
 # OPENAI_MODEL=gpt-4o-mini
 ```
 
-Backend env:
+Backend auth/database env (`backend/.env.example`):
 ```bash
 cp backend/.env.example backend/.env
+# set NEON_DATABASE_URL
+# set CLERK_ISSUER and CLERK_JWKS_URL
 ```
-Set values:
-- `NEON_DATABASE_URL=postgresql+psycopg://...`
-- `CLERK_ISSUER=https://<your-clerk-domain>`
-- `CLERK_JWKS_URL=https://<your-clerk-domain>/.well-known/jwks.json`
 
-Frontend env:
+Frontend Clerk env (`frontend/.env.example`):
 ```bash
 cp frontend/.env.example frontend/.env
+# set VITE_CLERK_PUBLISHABLE_KEY
 ```
-Set value:
-- `VITE_CLERK_PUBLISHABLE_KEY=pk_test_...` (or `pk_live_...`)
 
-### 4) Run
-Backend:
+3. Start API + frontend server:
 ```bash
-source .venv/bin/activate
 uvicorn app.main:app --app-dir backend --reload
+npm --prefix frontend run dev
 ```
 
-Frontend:
-```bash
-npm --prefix frontend run dev -- --host 127.0.0.1 --port 5174
-```
-
-Open:
+4. Open:
 - Frontend: http://127.0.0.1:5174
-- Backend health: http://127.0.0.1:8000/api/health
+- Backend API: http://127.0.0.1:8000
 
-## API Summary
-
-### `POST /api/analyze`
-Analyze keypoint timeline and return activity score, metrics, and feedback.
-
-### `POST /api/predict-squat-image`
-Classify squat posture from uploaded image using real-data squat model.
-
-### `POST /api/predict-cricket-action-video`
-Classify cricket action from uploaded video using real-data cricket model.
-
-### `GET /api/sessions`
-Get signed-in user's saved sessions.
-
-### `POST /api/sessions`
-Save a signed-in user's analysis session summary.
-
-## Model Training Scripts
-
-- Synthetic baseline models:
+## Run with Docker
 ```bash
-source .venv/bin/activate
-python backend/train_model.py
+docker compose up --build
 ```
 
-- Real squat model:
-```bash
-source .venv/bin/activate
-python backend/train_real_squat.py --data-root data/squat_real_dataset --out-model backend/models/rf_squat_real.pkl
+## Notes for Hackathon Demo
+- Start with `Gym: Squat` in live mode for consistent scoring.
+- Use a side-view clip for cricket cover drive.
+- Keep full body visible in frame for stable keypoints.
+
+## API Contract
+### POST `/api/analyze`
+```json
+{
+  "activity_hint": "auto",
+  "fps": 10,
+  "frames": [
+    {
+      "timestamp": 0.0,
+      "keypoints": [
+        {"x": 0.5, "y": 0.3, "score": 0.9}
+      ]
+    }
+  ]
+}
 ```
 
-- Real cricket action model:
-```bash
-source .venv/bin/activate
-python backend/train_real_cricket_action.py --data-root data/real_cricket_actions/cricketshot --out-model backend/models/rf_cricket_action_real.pkl
+### GET `/api/sessions`
+- Requires auth headers from Clerk session.
+- Returns the signed-in athlete's saved analysis sessions from Neon/Postgres.
+
+### POST `/api/sessions`
+```json
+{
+  "activity": "squat",
+  "score": 87,
+  "ml_label": "Good Squat",
+  "consistency": 91.2,
+  "risk": "Low",
+  "power": 452
+}
 ```
 
-## Dataset and Artifacts Policy
-
-Large datasets and model binaries are excluded from git in this repo snapshot:
-- `data/`
-- `models/`
-- `backend/models/*.pkl`
-
-Use the training scripts above to regenerate models locally after downloading datasets.
-
-## Demo Checklist
-- Login with Google (Clerk)
-- Start Live Analysis
-- Show real-time coaching + ML label
-- Toggle Pro-Compare
-- Run cricket timing simulation
-- End session and show saved history in Dashboard
+### Response
+```json
+{
+  "activity": "squat",
+  "overall_score": 82.5,
+  "metrics": [],
+  "feedback": [],
+  "timeline": {}
+}
+```

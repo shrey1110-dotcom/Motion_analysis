@@ -4,15 +4,3 @@ __pycache__/
 .venv/
 node_modules/
 .DS_Store
-
-data/
-models/
-backend/models/*.pkl
-backend/models/*.joblib
-backend/models/*.onnx
-backend/models/*.pt
-backend/models/*.h5
-frontend/node_modules/
-frontend/dist/
-.venv/
-synapse.db
