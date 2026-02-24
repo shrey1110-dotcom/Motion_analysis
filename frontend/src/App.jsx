@@ -87,6 +87,7 @@ function App() {
   const [analysisMode, setAnalysisMode] = useState("standard");
   const [status, setStatus] = useState("idle");
   const [isLoading, setIsLoading] = useState(false);
+  const [liveRunning, setLiveRunning] = useState(false);
 
   const [liveMetrics, setLiveMetrics] = useState({
     knee: 0,
@@ -183,6 +184,7 @@ function App() {
     analysisMode === "cricket" || CRICKET_ACTIVITY_KEYS.has(activity);
   const {
     sceneReady: cricketSceneReady,
+    sceneError: cricketSceneError,
     speedKey: cricketSpeed,
     setSpeedKey: setCricketSpeed,
     startDelivery,
@@ -559,8 +561,10 @@ function App() {
     const ctx = canvasEl.getContext("2d");
     const w = videoEl.videoWidth || 640;
     const h = videoEl.videoHeight || 480;
-    canvasEl.width = w;
-    canvasEl.height = h;
+    if (canvasEl.width !== w || canvasEl.height !== h) {
+      canvasEl.width = w;
+      canvasEl.height = h;
+    }
 
     ctx.clearRect(0, 0, w, h);
     ctx.drawImage(videoEl, 0, 0, w, h);
@@ -874,6 +878,7 @@ function App() {
   }
 
   async function startLiveCapture() {
+    if (liveRunningRef.current) return;
     try {
       await ensureDetector();
       const videoEl = liveVideoRef.current;
@@ -901,6 +906,7 @@ function App() {
       }
       setStatus("live running");
       liveRunningRef.current = true;
+      setLiveRunning(true);
 
       while (liveRunningRef.current) {
         const poses = await detectorRef.current.estimatePoses(videoEl, {
@@ -1042,12 +1048,14 @@ function App() {
       }
     } catch (err) {
       setStatus("live start failed");
+      setLiveRunning(false);
       alert(String(err?.message || err));
     }
   }
 
   function stopLiveCapture() {
     liveRunningRef.current = false;
+    setLiveRunning(false);
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
@@ -1348,6 +1356,7 @@ function App() {
     hasGoldenSkeleton, setHasGoldenSkeleton,
     compareScore, setCompareScore,
     isLoading, setIsLoading,
+    liveRunning,
     liveVideoRef, liveCanvasRef, pipVideoRef, pipCanvasRef,
     uploadVideoRef, uploadCanvasRef, fileInputRef,
     timelineCanvasRef, timelineSliderRef, cricketSceneMountRef,
@@ -1356,6 +1365,7 @@ function App() {
     ensureDetector, startLiveCapture, stopLiveCapture, analyzeUploadedVideo,
     stopTimelinePlayback, playTimeline, drawTimelineFrame,
     cricketSceneReady, deliveryCount, hitCount, cricketResult, cricketSpeed, setCricketSpeed, startDelivery,
+    cricketSceneError,
     exportJSON, exportCSV
   };
 

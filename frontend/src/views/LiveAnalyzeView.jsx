@@ -10,10 +10,10 @@ export function LiveAnalyzeView() {
     cricketModeEnabled,
     hasGoldenSkeleton, compareMode, setCompareMode, compareScore,
     repCount, liveConfidence, liveFeedback, liveMetrics, referenceMetrics, coachingLog, metricStatus, trend,
-    isLoading, analysis,
+    isLoading, analysis, liveRunning,
     liveVideoRef, liveCanvasRef, pipVideoRef, pipCanvasRef, uploadedVideoUrl,
     cricketSceneMountRef, framesRef, analyzeFrames,
-    cricketSceneReady, deliveryCount, hitCount, cricketResult, cricketSpeed, setCricketSpeed, startDelivery
+    cricketSceneReady, deliveryCount, hitCount, cricketResult, cricketSpeed, setCricketSpeed, startDelivery, cricketSceneError
   } = useOutletContext();
 
   // Robust initialization of the reference video source
@@ -83,6 +83,14 @@ export function LiveAnalyzeView() {
           : "text-subtxt border-white/10 bg-white/5";
   const showComparePanel = compareMode && hasGoldenSkeleton;
   const showCricketPanel = cricketModeEnabled && !compareMode;
+  const webglSupported = typeof window !== "undefined" && !!window.WebGLRenderingContext;
+
+  async function handleInitAI() {
+    await ensureDetector();
+    if (!liveRunning) {
+      await startLiveCapture();
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6 animate-content">
@@ -125,9 +133,9 @@ export function LiveAnalyzeView() {
           </select>
           <button
             className="btn-press rounded-xl bg-primary px-6 py-2.5 text-xs font-bold text-black shadow-[0_0_15px_rgba(0,229,255,0.4)] active:scale-95"
-            onClick={ensureDetector}
+            onClick={handleInitAI}
           >
-            INIT AI
+            {liveRunning ? "AI READY" : "INIT AI + CAMERA"}
           </button>
         </div>
         <div className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-subtxt">
@@ -156,6 +164,22 @@ export function LiveAnalyzeView() {
               ref={liveCanvasRef}
               className="pointer-events-none absolute inset-0 z-10 h-full w-full"
             />
+            {!liveRunning && (
+              <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/65">
+                <div className="mx-6 max-w-md rounded-2xl border border-white/15 bg-card/85 p-5 text-center backdrop-blur-md">
+                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-primary">Camera Not Started</p>
+                  <p className="mt-2 text-sm text-subtxt">
+                    Click <span className="font-bold text-white">INIT AI + CAMERA</span> to start live feed and pose tracking.
+                  </p>
+                  <button
+                    className="btn-press mt-4 rounded-xl bg-primary px-5 py-2 text-xs font-black text-black"
+                    onClick={handleInitAI}
+                  >
+                    START CAMERA NOW
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="absolute left-6 top-6 z-20 flex items-center gap-3">
               <div className="flex items-center gap-2 rounded-full bg-primary/90 px-4 py-1.5 text-[10px] font-black text-black shadow-2xl backdrop-blur-md">
@@ -220,7 +244,29 @@ export function LiveAnalyzeView() {
               </div>
             </div>
 
-            <div ref={cricketSceneMountRef} className="flex-1 min-h-[260px] overflow-hidden rounded-2xl border border-primary/20 bg-[#05101e] xl:min-h-[300px]" />
+            <div className="relative flex-1 min-h-[260px] overflow-hidden rounded-2xl border border-primary/20 bg-[#05101e] xl:min-h-[300px]">
+              <div ref={cricketSceneMountRef} className="absolute inset-0" />
+              {!cricketSceneReady && (
+                <div className="absolute inset-0 flex items-center justify-center bg-[#05101e]/85">
+                  <div className="rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-center">
+                    <p className="text-[11px] font-black uppercase tracking-widest text-subtxt">
+                      {cricketSceneError
+                        ? "Stadium Engine Error"
+                        : !webglSupported
+                          ? "WebGL Not Supported"
+                          : "Loading Stadium Engine"}
+                    </p>
+                    <p className="mt-1 text-xs text-subtxt">
+                      {cricketSceneError
+                        ? cricketSceneError
+                        : !webglSupported
+                        ? "Use Chrome/Edge with hardware acceleration enabled."
+                        : "Initialize AI and wait 1-2 seconds for renderer."}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-xl border border-white/10 bg-black/40 p-3">

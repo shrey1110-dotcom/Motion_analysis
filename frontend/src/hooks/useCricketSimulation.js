@@ -39,6 +39,7 @@ export function useCricketSimulation({ enabled, mountRef, swingRef }) {
   });
 
   const [sceneReady, setSceneReady] = useState(false);
+  const [sceneError, setSceneError] = useState("");
   const [speedKey, setSpeedKey] = useState("medium");
   const [deliveryCount, setDeliveryCount] = useState(0);
   const [hitCount, setHitCount] = useState(0);
@@ -177,6 +178,7 @@ export function useCricketSimulation({ enabled, mountRef, swingRef }) {
 
   useEffect(() => {
     if (!enabled) {
+      setSceneError("");
       disposeScene();
       return;
     }
@@ -185,23 +187,26 @@ export function useCricketSimulation({ enabled, mountRef, swingRef }) {
 
     (() => {
       if (cancelled || !mountRef.current) return;
+      try {
+        setSceneError("");
 
-      const scene = new THREE.Scene();
-      scene.background = new THREE.Color("#060c14");
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color("#060c14");
 
       const camera = new THREE.PerspectiveCamera(56, 1, 0.1, 120);
       camera.position.set(0, 1.72, 2.05);
       camera.lookAt(0, 1.35, -8.5);
 
-      const renderer = new THREE.WebGLRenderer({
-        antialias: true,
-        alpha: true,
-      });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-      renderer.outputColorSpace = THREE.SRGBColorSpace;
-      renderer.shadowMap.enabled = false;
-      mountRef.current.innerHTML = "";
-      mountRef.current.appendChild(renderer.domElement);
+        const renderer = new THREE.WebGLRenderer({
+          antialias: true,
+          alpha: true,
+          powerPreference: "high-performance",
+        });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.shadowMap.enabled = false;
+        mountRef.current.innerHTML = "";
+        mountRef.current.appendChild(renderer.domElement);
 
       const ambient = new THREE.AmbientLight(0x8cb7ff, 0.58);
       const keyLight = new THREE.DirectionalLight(0xa8e8ff, 0.95);
@@ -322,10 +327,10 @@ export function useCricketSimulation({ enabled, mountRef, swingRef }) {
       setSceneReady(true);
       resetForNextBall();
 
-      const loop = (ts) => {
-        const t = threeRef.current;
-        const s = stateRef.current;
-        if (!t.renderer || !t.scene || !t.camera) return;
+        const loop = (ts) => {
+          const t = threeRef.current;
+          const s = stateRef.current;
+          if (!t.renderer || !t.scene || !t.camera) return;
 
         if (t.bowler) {
           if (s.phase === "IDLE") {
@@ -469,11 +474,15 @@ export function useCricketSimulation({ enabled, mountRef, swingRef }) {
           t.bat.rotation.x = -0.2 + bp.y * 0.2;
         }
 
-        t.renderer.render(t.scene, t.camera);
-        t.rafId = requestAnimationFrame(loop);
-      };
+          t.renderer.render(t.scene, t.camera);
+          t.rafId = requestAnimationFrame(loop);
+        };
 
-      threeRef.current.rafId = requestAnimationFrame(loop);
+        threeRef.current.rafId = requestAnimationFrame(loop);
+      } catch (err) {
+        setSceneError(err?.message || "Stadium engine failed to initialize.");
+        disposeScene();
+      }
     })();
 
     return () => {
@@ -484,6 +493,7 @@ export function useCricketSimulation({ enabled, mountRef, swingRef }) {
 
   return {
     sceneReady,
+    sceneError,
     speedKey,
     setSpeedKey,
     startDelivery: queueDelivery,
