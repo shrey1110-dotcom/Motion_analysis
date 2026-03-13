@@ -46,6 +46,12 @@ def _metric_score(value: float, lo: float, hi: float) -> tuple[float, float]:
     return deviation, max(0.0, 100.0 - penalty)
 
 
+def _heuristic_overall_score(metrics: list[MetricResult], weights: dict[str, float]) -> float:
+    weighted_sum = sum(m.score * weights[m.name] for m in metrics)
+    total_weight = sum(weights[m.name] for m in metrics)
+    return weighted_sum / max(total_weight, 1e-6)
+
+
 def score_activity(activity: str, feature_values: dict[str, float]) -> tuple[float, list[MetricResult], str]:
     """
     Scores the activity using the Custom Random Forest classifiers.
@@ -92,9 +98,7 @@ def score_activity(activity: str, feature_values: dict[str, float]) -> tuple[flo
             squat_model = rf_squat_real
 
         if squat_model is None:
-            weighted_sum = sum(m.score * weights[m.name] for m in metrics)
-            total_weight = sum(weights[m.name] for m in metrics)
-            overall_score = weighted_sum / max(total_weight, 1e-6)
+            overall_score = _heuristic_overall_score(metrics, weights)
             ml_label = "Heuristic Grading (No Model)"
             return round(overall_score, 2), metrics, ml_label
 
@@ -141,9 +145,7 @@ def score_activity(activity: str, feature_values: dict[str, float]) -> tuple[flo
             overall_score = 40.0
     else:
         # Fallback to heuristic if models missing
-        weighted_sum = sum(m.score * weights[m.name] for m in metrics)
-        total_weight = sum(weights[m.name] for m in metrics)
-        overall_score = weighted_sum / max(total_weight, 1e-6)
+        overall_score = _heuristic_overall_score(metrics, weights)
         ml_label = "Heuristic Grading (No Model)"
 
     return round(overall_score, 2), metrics, ml_label
