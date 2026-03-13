@@ -8,27 +8,32 @@ import jwt
 from fastapi import Header, HTTPException, status
 
 
-CLERK_ISSUER = os.getenv("CLERK_ISSUER", "")
-CLERK_JWKS_URL = os.getenv("CLERK_JWKS_URL", "")
+def _clerk_issuer() -> str:
+    return os.getenv("CLERK_ISSUER", "").strip()
 
 
-@lru_cache(maxsize=1)
-def _jwks_client() -> Optional[jwt.PyJWKClient]:
-    if not CLERK_JWKS_URL:
+def _clerk_jwks_url() -> str:
+    return os.getenv("CLERK_JWKS_URL", "").strip()
+
+
+@lru_cache(maxsize=4)
+def _jwks_client(jwks_url: str) -> Optional[jwt.PyJWKClient]:
+    if not jwks_url:
         return None
-    return jwt.PyJWKClient(CLERK_JWKS_URL)
+    return jwt.PyJWKClient(jwks_url)
 
 
 def _decode_with_verification(token: str) -> dict[str, Any]:
-    client = _jwks_client()
-    if client is None or not CLERK_ISSUER:
+    issuer = _clerk_issuer()
+    client = _jwks_client(_clerk_jwks_url())
+    if client is None or not issuer:
         raise ValueError("Clerk verification config missing.")
     signing_key = client.get_signing_key_from_jwt(token).key
     return jwt.decode(
         token,
         signing_key,
         algorithms=["RS256"],
-        issuer=CLERK_ISSUER,
+        issuer=issuer,
         options={"verify_aud": False},
     )
 
