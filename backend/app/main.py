@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, File, Query, UploadFile
@@ -38,8 +39,13 @@ from app.schemas import (
     SquatImagePredictionResponse,
 )
 
-app = FastAPI(title="Sports Motion Analysis API", version="0.2.0")
-init_db()
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    init_db()
+    yield
+
+
+app = FastAPI(title="Sports Motion Analysis API", version="0.2.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -59,11 +65,6 @@ def _database_mode() -> str:
 
 def _auth_mode() -> str:
     return "clerk" if "CLERK_ISSUER" in os.environ else "header-or-bearer"
-
-
-@app.on_event("startup")
-def on_startup() -> None:
-    init_db()
 
 
 @app.get("/api/health")
