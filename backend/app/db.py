@@ -14,15 +14,16 @@ DATABASE_URL = (
     or f"sqlite:///{Path(__file__).resolve().parents[2] / 'synapse.db'}"
 )
 
+ENGINE_KWARGS = {"pool_pre_ping": True}
+if DATABASE_URL.startswith("sqlite"):
+    ENGINE_KWARGS["connect_args"] = {"check_same_thread": False}
+
 
 class Base(DeclarativeBase):
     pass
 
 
-engine = create_engine(
-    DATABASE_URL,
-    pool_pre_ping=True,
-)
+engine = create_engine(DATABASE_URL, **ENGINE_KWARGS)
 
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, class_=Session)
 
