@@ -75,6 +75,21 @@ def health() -> dict[str, str]:
     }
 
 
+@app.get("/api/info")
+def info() -> dict[str, object]:
+    return {
+        "name": app.title,
+        "version": app.version,
+        "frontend_embedded": FRONTEND_DIR.exists(),
+        "features": [
+            "pose-analysis",
+            "session-history",
+            "image-squat-classification",
+            "video-cricket-classification",
+        ],
+    }
+
+
 @app.post("/api/analyze", response_model=AnalysisResponse)
 def analyze(payload: AnalysisRequest) -> AnalysisResponse:
     frames = payload.frames
