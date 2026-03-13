@@ -46,14 +46,23 @@ docs/
 ```
 
 ## Run Locally
-1. Create environment and install dependencies:
+Prerequisites:
+- Python 3.9+
+- Node.js 18+
+
+1. Create environment and install backend dependencies:
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r backend/requirements.txt
+pip install -r backend/requirements-dev.txt
 ```
 
-2. Configure env:
+2. Install frontend dependencies:
+```bash
+npm --prefix frontend install
+```
+
+3. Configure env:
 ```bash
 cp .env.example .env
 # optional LLM rewrite
@@ -74,13 +83,13 @@ cp frontend/.env.example frontend/.env
 # set VITE_CLERK_PUBLISHABLE_KEY
 ```
 
-3. Start API + frontend server:
+4. Start API + frontend server:
 ```bash
 uvicorn app.main:app --app-dir backend --reload
 npm --prefix frontend run dev
 ```
 
-4. Open:
+5. Open:
 - Frontend: http://127.0.0.1:5174
 - Backend API: http://127.0.0.1:8000
 
