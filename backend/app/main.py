@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, File, UploadFile
+from fastapi import Depends, FastAPI, File, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -148,6 +148,7 @@ async def predict_cricket_action_video_endpoint(
 
 @app.get("/api/sessions", response_model=list[SessionResponse])
 def list_sessions(
+    limit: int = Query(default=100, ge=1, le=250),
     user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ) -> list[SessionResponse]:
@@ -155,7 +156,7 @@ def list_sessions(
         db.query(AnalysisSession)
         .filter(AnalysisSession.clerk_user_id == user_id)
         .order_by(AnalysisSession.created_at.desc())
-        .limit(100)
+        .limit(limit)
         .all()
     )
     return [SessionResponse.model_validate(r) for r in rows]
