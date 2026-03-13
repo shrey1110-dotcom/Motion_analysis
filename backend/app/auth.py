@@ -16,6 +16,14 @@ def _clerk_jwks_url() -> str:
     return os.getenv("CLERK_JWKS_URL", "").strip()
 
 
+def _allow_insecure_auth_fallback() -> bool:
+    return os.getenv("ALLOW_INSECURE_AUTH_FALLBACK", "true").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+
+
 @lru_cache(maxsize=4)
 def _jwks_client(jwks_url: str) -> Optional[jwt.PyJWKClient]:
     if not jwks_url:
@@ -69,6 +77,8 @@ def get_current_user_id(
         try:
             payload = _decode_with_verification(token)
         except Exception:
+            if not _allow_insecure_auth_fallback():
+                raise
             payload = _decode_without_verification(token)
         user_id = payload.get("sub")
         if not user_id:
