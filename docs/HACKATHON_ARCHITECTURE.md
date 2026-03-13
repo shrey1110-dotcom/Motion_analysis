@@ -53,6 +53,12 @@
   - Uvicorn local runtime
   - Docker + docker-compose for demo portability
 
+## Local Runtime Notes
+
+- The current repo uses a React + Vite frontend instead of a single static HTML page.
+- Clerk handles authentication for saved session history.
+- PostgreSQL/Neon is used when `NEON_DATABASE_URL` is configured; otherwise the app falls back to local SQLite for development.
+
 ## 4. Data Flow
 
 1. Input
