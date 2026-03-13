@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, File, UploadFile
@@ -25,7 +26,7 @@ from app.analysis.feedback import (
 from app.analysis.image_squat_model import predict_squat_image
 from app.analysis.video_cricket_model import predict_cricket_action_video
 from app.auth import get_current_user_id
-from app.db import get_db, init_db
+from app.db import DATABASE_URL, get_db, init_db
 from app.models import AnalysisSession
 from app.analysis.scoring import score_activity
 from app.schemas import (
@@ -52,6 +53,14 @@ ROOT = Path(__file__).resolve().parents[2]
 FRONTEND_DIR = ROOT / "frontend"
 
 
+def _database_mode() -> str:
+    return "sqlite" if DATABASE_URL.startswith("sqlite") else "postgres"
+
+
+def _auth_mode() -> str:
+    return "clerk" if "CLERK_ISSUER" in os.environ else "header-or-bearer"
+
+
 @app.on_event("startup")
 def on_startup() -> None:
     init_db()
@@ -59,7 +68,11 @@ def on_startup() -> None:
 
 @app.get("/api/health")
 def health() -> dict[str, str]:
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "database": _database_mode(),
+        "auth": _auth_mode(),
+    }
 
 
 @app.post("/api/analyze", response_model=AnalysisResponse)
