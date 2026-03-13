@@ -27,20 +27,22 @@ backend/
   app/
     analysis/
       activity.py
-      angles.py
-      constants.py
-      features.py
-      feedback.py
-      reference_library.py
-      scoring.py
+      biomechanics.py
+      image_squat_model.py
+      video_cricket_model.py
+    auth.py
+    db.py
+    models.py
     main.py
     schemas.py
   requirements.txt
+  requirements-dev.txt
 frontend/
-  index.html
-  assets/
-    app.js
-    styles.css
+  src/
+  public/
+  package.json
+docs/
+  HACKATHON_ARCHITECTURE.md
 ```
 
 ## Run Locally
