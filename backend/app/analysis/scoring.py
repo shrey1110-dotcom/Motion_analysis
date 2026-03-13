@@ -1,27 +1,32 @@
-import os
+from __future__ import annotations
+
+from pathlib import Path
+
 import joblib
 import pandas as pd
+
 from app.analysis.reference_library import REFERENCE_LIBRARY
 from app.schemas import MetricResult
 
-# Load the trained ML models on startup
-# Use absolute or relative path carefully; assuming backend/ is the working directory for uvicorn
-MODEL_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "models")
 
-try:
-    # Prefer real-data model when it is compatible with keypoint feature schema.
-    rf_squat_real = joblib.load(os.path.join(MODEL_DIR, "rf_squat_real.pkl"))
-except Exception:
-    rf_squat_real = None
+MODEL_DIR = Path(__file__).resolve().parents[2] / "models"
 
-try:
-    rf_squat = joblib.load(os.path.join(MODEL_DIR, "rf_squat.pkl"))
-    rf_drive = joblib.load(os.path.join(MODEL_DIR, "rf_cover_drive.pkl"))
-    print("✅ Loaded Custom ML Models successfully.")
-except Exception as e:
-    print(f"⚠️ Warning: Could not load ML models. Generating random scores. Error: {e}")
-    rf_squat = None
-    rf_drive = None
+
+def _model_path(name: str) -> Path:
+    return MODEL_DIR / name
+
+
+def _load_joblib_model(name: str):
+    try:
+        return joblib.load(_model_path(name))
+    except Exception:
+        return None
+
+
+# Prefer real-data model when it is compatible with keypoint feature schema.
+rf_squat_real = _load_joblib_model("rf_squat_real.pkl")
+rf_squat = _load_joblib_model("rf_squat.pkl")
+rf_drive = _load_joblib_model("rf_cover_drive.pkl")
 
 
 def _metric_score(value: float, lo: float, hi: float) -> tuple[float, float]:
