@@ -146,3 +146,25 @@ docker compose up --build
   "timeline": {}
 }
 ```
+
+## Testing
+Run the backend test suite with:
+
+```bash
+python3 -m pytest
+```
+
+## Quick API Checks
+Health check:
+
+```bash
+curl http://127.0.0.1:8000/api/health
+```
+
+Analyze endpoint:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/analyze \
+  -H 'Content-Type: application/json' \
+  -d @sample-analysis-request.json
+```
