@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import joblib
@@ -10,6 +11,7 @@ from app.schemas import MetricResult
 
 
 MODEL_DIR = Path(__file__).resolve().parents[2] / "models"
+LOGGER = logging.getLogger(__name__)
 
 
 def _model_path(name: str) -> Path:
@@ -27,6 +29,11 @@ def _load_joblib_model(name: str):
 rf_squat_real = _load_joblib_model("rf_squat_real.pkl")
 rf_squat = _load_joblib_model("rf_squat.pkl")
 rf_drive = _load_joblib_model("rf_cover_drive.pkl")
+
+if rf_squat is None:
+    LOGGER.warning("Random forest squat model is unavailable; using heuristic fallback.")
+if rf_drive is None:
+    LOGGER.warning("Random forest cover drive model is unavailable; using heuristic fallback.")
 
 
 def _metric_score(value: float, lo: float, hi: float) -> tuple[float, float]:
