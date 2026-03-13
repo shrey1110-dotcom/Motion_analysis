@@ -1,12 +1,16 @@
 from fastapi.testclient import TestClient
+import pytest
 
 from app.main import app
 
 
-client = TestClient(app)
+@pytest.fixture
+def client():
+    with TestClient(app) as test_client:
+        yield test_client
 
 
-def test_health_endpoint_reports_runtime_metadata() -> None:
+def test_health_endpoint_reports_runtime_metadata(client) -> None:
     response = client.get("/api/health")
     assert response.status_code == 200
     payload = response.json()
@@ -14,7 +18,7 @@ def test_health_endpoint_reports_runtime_metadata() -> None:
     assert "database" in payload
 
 
-def test_info_endpoint_reports_capabilities() -> None:
+def test_info_endpoint_reports_capabilities(client) -> None:
     response = client.get("/api/info")
     assert response.status_code == 200
     payload = response.json()
@@ -22,7 +26,7 @@ def test_info_endpoint_reports_capabilities() -> None:
     assert "pose-analysis" in payload["features"]
 
 
-def test_session_endpoints_support_header_based_user_context() -> None:
+def test_session_endpoints_support_header_based_user_context(client) -> None:
     headers = {"X-Clerk-User-Id": "pytest-user"}
     create_response = client.post(
         "/api/sessions",
