@@ -1,8 +1,19 @@
-# React + Vite
+# Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite client for live camera analysis, upload analysis, and authenticated session history.
 
-Currently, two official plugins are available:
+## Stack
+- React 18
+- Vite
+- Clerk
+- Chart.js
+- Three.js
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Local Development
+```bash
+cp .env.example .env
+npm install
+npm run dev
+```
+
+Set `VITE_CLERK_PUBLISHABLE_KEY` in `.env` before signing in locally.
